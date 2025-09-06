@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fuzzy QA Platform</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="config.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Fuzzy QA Platform</h1>
+    <button id="btn-load">随机抽图并生成问题</button>
+  </header>
+  <main>
+    <section id="image-section" class="card hidden">
+      <img id="img" alt="sample" />
+      <div class="meta">
+        <div>Sample ID: <code id="sample-id">—</code></div>
+        <div>Image: <code id="image-rel">—</code></div>
+      </div>
+    </section>
+    <section id="qa-section" class="card hidden">
+      <table id="qa-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>维度</th>
+            <th>问题</th>
+            <th>Test 模型答案</th>
+            <th>评分 (-1/0/+1)</th>
+            <th>备注</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="actions">
+        <button id="btn-submit" disabled>提交评分</button>
+      </div>
+      <div id="toast" class="toast hidden"></div>
+    </section>
+  </main>
+</body>
+</html>

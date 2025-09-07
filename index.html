@@ -1,22 +1,20 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fuzzy QA Platform</title>
-  <link rel="stylesheet" href="styles.css" />
-  
-  <script>
-  (async () => {
-    const r = await fetch('./config.json', { cache: 'no-store' });
-    const cfg = await r.json();
-    window.BACKEND_BASE = cfg.BACKEND_BASE;
-  })();
-  </script>
-
-  <script defer src="config.js"></script>
-  <script defer src="app.js"></script>
-</head>
+<header>
+  <h1>Fuzzy QA Platform</h1>
+  <div id="auth-box">
+    <form id="login-form">
+      <input id="username" placeholder="用户名" required />
+      <input id="password" type="password" placeholder="密码" required />
+      <button type="submit">登录</button>
+    </form>
+    <div id="whoami" class="hidden">
+      <span>已登录：<b id="me-name"></b></span>
+      <button id="btn-logout" type="button">退出</button>
+    </div>
+  </div>
+  <button id="btn-load" disabled>随机抽图并生成问题</button>
+</header>
 <body>
   <header>
     <h1>Fuzzy QA Platform</h1>

@@ -1,12 +1,74 @@
 const $ = (sel) => document.querySelector(sel);
 const tbody = $("#qa-table tbody");
 let CURRENT = null; // { sample_id, image_relpath, image_web_url, qas: [...] }
+let TOKEN = localStorage.getItem("token") || "";
 
 function toast(msg) {
   const el = $("#toast");
   el.textContent = msg;
   el.classList.remove("hidden");
-  setTimeout(() => el.classList.add("hidden"), 2500);
+  setTimeout(() => el.classList.add("hidden"), 2000);
+}
+
+function authHeaders() {
+  const h = { "Content-Type": "application/json" };
+  if (TOKEN) h["Authorization"] = `Bearer ${TOKEN}`;
+  return h;
+}
+
+function setAuthedUI(name) {
+  if (TOKEN) {
+    $("#login-form").classList.add("hidden");
+    $("#whoami").classList.remove("hidden");
+    $("#me-name").textContent = name || "";
+    $("#btn-load").disabled = false;
+  } else {
+    $("#login-form").classList.remove("hidden");
+    $("#whoami").classList.add("hidden");
+    $("#btn-load").disabled = true;
+  }
+}
+
+async function fetchMe() {
+  if (!TOKEN) return setAuthedUI("");
+  try {
+    const url = new URL("/api/auth/me", window.BACKEND_BASE);
+    const res = await fetch(url, { headers: authHeaders() });
+    if (!res.ok) throw new Error("not authed");
+    const me = await res.json();
+    setAuthedUI(me.username);
+  } catch {
+    TOKEN = ""; localStorage.removeItem("token");
+    setAuthedUI("");
+  }
+}
+
+async function login(e) {
+  e.preventDefault();
+  const username = $("#username").value.trim();
+  const password = $("#password").value;
+  if (!username || !password) return;
+  try {
+    const url = new URL("/api/auth/login", window.BACKEND_BASE);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) throw new Error("login failed");
+    const data = await res.json();
+    TOKEN = data.access_token;
+    localStorage.setItem("token", TOKEN);
+    await fetchMe();
+    toast("登录成功");
+  } catch (err) {
+    console.error(err); toast("登录失败");
+  }
+}
+
+function logout() {
+  TOKEN = ""; localStorage.removeItem("token");
+  setAuthedUI(""); toast("已退出");
 }
 
 async function loadSample() {
@@ -15,7 +77,7 @@ async function loadSample() {
   tbody.innerHTML = "";
   try {
     const url = new URL("/api/sample", window.BACKEND_BASE);
-    const res = await fetch(url, { method: "GET" });
+    const res = await fetch(url, { method: "GET", headers: authHeaders() });
     if (!res.ok) throw new Error("request failed");
     const data = await res.json();
     CURRENT = data;
@@ -60,32 +122,34 @@ async function submitRatings() {
   const ratings = [];
   tbody.querySelectorAll(".score-select").forEach(sel => {
     const val = sel.value;
-    if (val === "") return; // skip unscored
+    if (val === "") return;
     const qid = sel.getAttribute("data-qid");
     const cmt = tbody.querySelector(`input[data-cmt="${qid}"]`).value;
     ratings.push({ id: qid, score: Number(val), comment: cmt || undefined });
   });
-  if (!ratings.length) {
-    toast("请至少为一个问题打分");
-    return;
-  }
+  if (!ratings.length) return toast("请至少为一个问题打分");
   $("#btn-submit").disabled = true;
   try {
     const url = new URL("/api/rating", window.BACKEND_BASE);
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
       body: JSON.stringify({ sample_id: CURRENT.sample_id, ratings }),
     });
     if (!res.ok) throw new Error("rating failed");
     toast("评分已提交，感谢！");
   } catch (err) {
-    console.error(err);
-    toast("提交失败");
+    console.error(err); toast("提交失败");
   } finally {
     $("#btn-submit").disabled = false;
   }
 }
 
+// wire up
+$("#login-form").addEventListener("submit", login);
+$("#btn-logout").addEventListener("click", logout);
 $("#btn-load").addEventListener("click", loadSample);
 $("#btn-submit").addEventListener("click", submitRatings);
+
+// on load
+fetchMe();

@@ -119,8 +119,3 @@ async function submitRatings() {
 // 事件绑定
 $("#btn-load").addEventListener("click", loadSample);
 $("#btn-submit").addEventListener("click", submitRatings);
-// 让页面一打开就收集用户名（如果还没设置）
-if (!localStorage.getItem("username")) {
-  // ensureUsername 会弹出 prompt
-  ensureUsername();
-}

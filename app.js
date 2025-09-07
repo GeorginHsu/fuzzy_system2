@@ -16,7 +16,12 @@ function toast(msg) {
   if (!el) return;
   el.textContent = msg;
   el.classList.remove("hidden");
-  setTimeout(() => el.classList.add("hidden"), 2000);
+  if (kind === "error") el.classList.add("error");
+  // 2 秒后隐藏并移除 error 标记
+  setTimeout(() => {
+    el.classList.add("hidden");
+    el.classList.remove("error");
+  }, 2000);
 }
 
 // 如果没用户名，再次弹出
@@ -119,7 +124,8 @@ async function submitRatings() {
     if (!res.ok) throw new Error(`rating failed: ${res.status}`);
     toast("评分已提交，感谢！");
   } catch (err) {
-    console.error(err); toast("提交失败");
+    console.error(err);
+    toast("提交失败", "error");
   } finally {
     $("#btn-submit").disabled = false;
   }

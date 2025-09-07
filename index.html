@@ -42,22 +42,51 @@
     </section>
   </main>
 
-  <div id="backend-status" style="position:fixed;right:12px;bottom:12px;padding:6px 10px;border-radius:20px;background:#eee;font:12px/1.6 system-ui">Backend: checking…</div>
+  <div id="backend-status"
+      style="position:fixed;right:12px;bottom:12px;padding:6px 10px;border-radius:20px;
+              background:#6b7280;color:#fff;font:12px/1.6 system-ui">
+    Backend: checking…
+  </div>
+
   <script>
   (async () => {
     const el = document.getElementById('backend-status');
     const base = window.BACKEND_BASE;
-    if (!base) { el.textContent = 'Backend: ✗ not set'; el.style.background='#fee2e2'; return; }
+
+    // 颜色常量：绿（成功）、红（失败）
+    const OK_BG  = '#22c55e'; // green
+    const BAD_BG = '#ef4444'; // red
+
+    if (!base) {
+      el.textContent = 'Backend: ✗ not set';
+      el.style.background = BAD_BG;
+      el.style.color = '#fff';
+      return;
+    }
     try {
       const t0 = performance.now();
-      const r = await fetch(`${base}/health`, {mode:'cors', cache:'no-store', signal: AbortSignal.timeout(4000)});
+      const r = await fetch(`${base}/health`, {
+        mode: 'cors',
+        cache: 'no-store',
+        signal: AbortSignal.timeout(4000)
+      });
       const ms = Math.round(performance.now() - t0);
-      if (r.ok) { el.textContent = `Backend: ✓ ${ms} ms`; el.style.background='#d1fae5'; }
-      else { el.textContent = `Backend: ✗ HTTP ${r.status}`; el.style.background='#fee2e2'; }
+      if (r.ok) {
+        el.textContent = `Backend: ✓ ${ms} ms`;
+        el.style.background = OK_BG;
+        el.style.color = '#fff';
+      } else {
+        el.textContent = `Backend: ✗ HTTP ${r.status}`;
+        el.style.background = BAD_BG;
+        el.style.color = '#fff';
+      }
     } catch (e) {
-      el.textContent = `Backend: ✗ ${e.name||'Error'}`; el.style.background='#fee2e2';
+      el.textContent = `Backend: ✗ ${e.name || 'Error'}`;
+      el.style.background = BAD_BG;
+      el.style.color = '#fff';
     }
   })();
   </script>
+
 </body>
 </html>

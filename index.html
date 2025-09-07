@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Fuzzy QA Platform</title>
   <link rel="stylesheet" href="styles.css" />
+  
+  <script>
+  (async () => {
+    const r = await fetch('./config.json', { cache: 'no-store' });
+    const cfg = await r.json();
+    window.BACKEND_BASE = cfg.BACKEND_BASE;
+  })();
+  </script>
+
   <script defer src="config.js"></script>
   <script defer src="app.js"></script>
 </head>

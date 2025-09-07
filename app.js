@@ -11,16 +11,13 @@ let CURRENT = null;
   }
 })();
 
-function toast(msg, kind = "info") {
+function toast(msg) {
   const el = $("#toast");
   if (!el) return;
   el.textContent = msg;
   el.classList.remove("hidden");
-  if (kind === "error") el.classList.add("error");
-  // 2 秒后隐藏并移除 error 标记
   setTimeout(() => {
     el.classList.add("hidden");
-    el.classList.remove("error");
   }, 2000);
 }
 
@@ -125,7 +122,7 @@ async function submitRatings() {
     toast("评分已提交，感谢！");
   } catch (err) {
     console.error(err);
-    toast("提交失败", kind = "error");
+    toast("提交失败");
   } finally {
     $("#btn-submit").disabled = false;
   }

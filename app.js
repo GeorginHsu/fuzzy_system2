@@ -11,7 +11,7 @@ let CURRENT = null;
   }
 })();
 
-function toast(msg) {
+function toast(msg, kind = "info") {
   const el = $("#toast");
   if (!el) return;
   el.textContent = msg;
@@ -125,7 +125,7 @@ async function submitRatings() {
     toast("评分已提交，感谢！");
   } catch (err) {
     console.error(err);
-    toast("提交失败", "error");
+    toast("提交失败", kind = "error");
   } finally {
     $("#btn-submit").disabled = false;
   }

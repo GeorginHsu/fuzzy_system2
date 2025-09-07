@@ -13,16 +13,7 @@
     window.BACKEND_BASE = cfg.BACKEND_BASE;
   })();
   </script>
-  <script>
-    (function () {
-      var key = 'username';
-      var u = localStorage.getItem(key);
-      if (!u) {
-        u = (prompt('请输入用户名：') || '').trim();
-        if (u) localStorage.setItem(key, u);
-      }
-    })();
-  </script>
+
   <script defer src="config.js"></script>
   <script defer src="app.js"></script>
 </head>

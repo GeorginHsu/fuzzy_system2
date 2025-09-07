@@ -1,16 +1,15 @@
 const $ = (sel) => document.querySelector(sel);
 const tbody = $("#qa-table tbody");
 let CURRENT = null;
-let USERNAME = localStorage.getItem("username") || "";
 
-// 如你用 config.json / config.js 异步设置 BACKEND_BASE，等待它就绪
-async function waitForBackendBase(timeout = 10000) {
-  const t0 = Date.now();
-  while (!window.BACKEND_BASE) {
-    await new Promise(r => setTimeout(r, 50));
-    if (Date.now() - t0 > timeout) throw new Error("BACKEND_BASE not loaded");
+// —— 打开页面就收集用户名（只要一次；存 localStorage） ——
+(function bootstrapUsername() {
+  let u = localStorage.getItem("username") || "";
+  if (!u) {
+    u = (prompt("请输入用户名：") || "").trim();
+    if (u) localStorage.setItem("username", u);
   }
-}
+})();
 
 function toast(msg) {
   const el = $("#toast");
@@ -20,21 +19,32 @@ function toast(msg) {
   setTimeout(() => el.classList.add("hidden"), 2000);
 }
 
+// 如果没用户名，再次弹出
+async function ensureUsername() {
+  let u = localStorage.getItem("username") || "";
+  if (u) return true;
+  u = (prompt("请输入用户名：") || "").trim();
+  if (!u) { toast("未设置用户名"); return false; }
+  localStorage.setItem("username", u);
+  return true;
+}
+
+// 统一加请求头：把用户名带给后端
 function headers(json = false) {
   const h = {};
   if (json) h["Content-Type"] = "application/json";
-  if (USERNAME) h["X-Username"] = USERNAME; // 关键：把用户名传给后端
+  const u = localStorage.getItem("username");
+  if (u) h["X-Username"] = u;
   return h;
 }
 
-async function ensureUsername() {
-  if (USERNAME) return true;
-  const name = window.prompt("请输入用户名：");
-  if (!name) { toast("未设置用户名"); return false; }
-  USERNAME = name.trim();
-  if (!USERNAME) { toast("用户名不能为空"); return false; }
-  localStorage.setItem("username", USERNAME);
-  return true;
+// 等待 BACKEND_BASE（你有 config.json/config.js 异步设置）
+async function waitForBackendBase(timeout = 10000) {
+  const t0 = Date.now();
+  while (!window.BACKEND_BASE) {
+    await new Promise(r => setTimeout(r, 50));
+    if (Date.now() - t0 > timeout) throw new Error("BACKEND_BASE not loaded");
+  }
 }
 
 async function loadSample() {
@@ -77,8 +87,8 @@ async function loadSample() {
     });
 
     $("#btn-submit").disabled = false;
-  } catch (e) {
-    console.error(e);
+  } catch (err) {
+    console.error(err);
     toast("加载失败");
   } finally {
     $("#btn-load").disabled = false;
@@ -108,14 +118,13 @@ async function submitRatings() {
     });
     if (!res.ok) throw new Error(`rating failed: ${res.status}`);
     toast("评分已提交，感谢！");
-  } catch (e) {
-    console.error(e);
-    toast("提交失败");
+  } catch (err) {
+    console.error(err); toast("提交失败");
   } finally {
     $("#btn-submit").disabled = false;
   }
 }
 
-// 事件绑定
+// 只绑定现有按钮（你的 HTML 没有登录表单）
 $("#btn-load").addEventListener("click", loadSample);
 $("#btn-submit").addEventListener("click", submitRatings);

@@ -1,84 +1,67 @@
 const $ = (sel) => document.querySelector(sel);
 const tbody = $("#qa-table tbody");
-let CURRENT = null; // { sample_id, image_relpath, image_web_url, qas: [...] }
-let TOKEN = localStorage.getItem("token") || "";
+let CURRENT = null;
+let USERNAME = localStorage.getItem("username") || "";
+
+// 等待 window.BACKEND_BASE 可用（你用 config.json 异步加载）
+async function waitForBackendBase(timeout = 10000) {
+  const t0 = Date.now();
+  while (!window.BACKEND_BASE) {
+    await new Promise(r => setTimeout(r, 50));
+    if (Date.now() - t0 > timeout) throw new Error("BACKEND_BASE not loaded");
+  }
+}
 
 function toast(msg) {
   const el = $("#toast");
+  if (!el) return;
   el.textContent = msg;
   el.classList.remove("hidden");
   setTimeout(() => el.classList.add("hidden"), 2000);
 }
 
-function authHeaders() {
-  const h = { "Content-Type": "application/json" };
-  if (TOKEN) h["Authorization"] = `Bearer ${TOKEN}`;
+function setButtonsEnabled(enabled) {
+  const btnLoad = $("#btn-load");
+  const btnSubmit = $("#btn-submit");
+  if (btnLoad) btnLoad.disabled = !enabled;
+  if (btnSubmit) btnSubmit.disabled = !enabled;
+}
+
+function headers(json = false) {
+  const h = {};
+  if (json) h["Content-Type"] = "application/json";
+  if (USERNAME) h["X-Username"] = USERNAME; // 关键：把用户名传给后端
   return h;
 }
 
-function setAuthedUI(name) {
-  if (TOKEN) {
-    $("#login-form").classList.add("hidden");
-    $("#whoami").classList.remove("hidden");
-    $("#me-name").textContent = name || "";
-    $("#btn-load").disabled = false;
-  } else {
-    $("#login-form").classList.remove("hidden");
-    $("#whoami").classList.add("hidden");
-    $("#btn-load").disabled = true;
+async function ensureUsername() {
+  if (USERNAME) return true;
+  const name = window.prompt("请输入用户名：");
+  if (!name) {
+    toast("未设置用户名，功能已禁用");
+    setButtonsEnabled(false);
+    return false;
   }
-}
-
-async function fetchMe() {
-  if (!TOKEN) return setAuthedUI("");
-  try {
-    const url = new URL("/api/auth/me", window.BACKEND_BASE);
-    const res = await fetch(url, { headers: authHeaders() });
-    if (!res.ok) throw new Error("not authed");
-    const me = await res.json();
-    setAuthedUI(me.username);
-  } catch {
-    TOKEN = ""; localStorage.removeItem("token");
-    setAuthedUI("");
+  USERNAME = name.trim();
+  if (!USERNAME) {
+    toast("用户名不能为空");
+    setButtonsEnabled(false);
+    return false;
   }
-}
-
-async function login(e) {
-  e.preventDefault();
-  const username = $("#username").value.trim();
-  const password = $("#password").value;
-  if (!username || !password) return;
-  try {
-    const url = new URL("/api/auth/login", window.BACKEND_BASE);
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-    if (!res.ok) throw new Error("login failed");
-    const data = await res.json();
-    TOKEN = data.access_token;
-    localStorage.setItem("token", TOKEN);
-    await fetchMe();
-    toast("登录成功");
-  } catch (err) {
-    console.error(err); toast("登录失败");
-  }
-}
-
-function logout() {
-  TOKEN = ""; localStorage.removeItem("token");
-  setAuthedUI(""); toast("已退出");
+  localStorage.setItem("username", USERNAME);
+  setButtonsEnabled(true);
+  return true;
 }
 
 async function loadSample() {
-  $("#btn-load").disabled = true;
-  $("#btn-submit").disabled = true;
+  if (!await ensureUsername()) return;
+  setButtonsEnabled(false);
   tbody.innerHTML = "";
   try {
+    await waitForBackendBase();
     const url = new URL("/api/sample", window.BACKEND_BASE);
-    const res = await fetch(url, { method: "GET", headers: authHeaders() });
-    if (!res.ok) throw new Error("request failed");
+    const res = await fetch(url, { method: "GET", headers: headers() });
+    if (!res.ok) throw new Error(`request failed: ${res.status}`);
     const data = await res.json();
     CURRENT = data;
 
@@ -109,8 +92,8 @@ async function loadSample() {
     });
 
     $("#btn-submit").disabled = false;
-  } catch (err) {
-    console.error(err);
+  } catch (e) {
+    console.error(e);
     toast("加载失败");
   } finally {
     $("#btn-load").disabled = false;
@@ -118,9 +101,10 @@ async function loadSample() {
 }
 
 async function submitRatings() {
-  if (!CURRENT) return;
+  if (!await ensureUsername()) return;
+  if (!CURRENT) return toast("请先加载一组样本");
   const ratings = [];
-  tbody.querySelectorAll(".score-select").forEach(sel => {
+  tbody.querySelectorAll(".score-select").forEach((sel) => {
     const val = sel.value;
     if (val === "") return;
     const qid = sel.getAttribute("data-qid");
@@ -130,26 +114,31 @@ async function submitRatings() {
   if (!ratings.length) return toast("请至少为一个问题打分");
   $("#btn-submit").disabled = true;
   try {
+    await waitForBackendBase();
     const url = new URL("/api/rating", window.BACKEND_BASE);
     const res = await fetch(url, {
       method: "POST",
-      headers: authHeaders(),
+      headers: headers(true),
       body: JSON.stringify({ sample_id: CURRENT.sample_id, ratings }),
     });
-    if (!res.ok) throw new Error("rating failed");
+    if (!res.ok) throw new Error(`rating failed: ${res.status}`);
     toast("评分已提交，感谢！");
-  } catch (err) {
-    console.error(err); toast("提交失败");
+  } catch (e) {
+    console.error(e);
+    toast("提交失败");
   } finally {
     $("#btn-submit").disabled = false;
   }
 }
 
-// wire up
-$("#login-form").addEventListener("submit", login);
-$("#btn-logout").addEventListener("click", logout);
-$("#btn-load").addEventListener("click", loadSample);
-$("#btn-submit").addEventListener("click", submitRatings);
-
-// on load
-fetchMe();
+// 事件绑定 & 初始化
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    await waitForBackendBase();
+  } catch {
+    toast("后端地址未加载（检查 config.json/config.js）");
+  }
+  if (USERNAME) setButtonsEnabled(true);
+  $("#btn-load").addEventListener("click", loadSample);
+  $("#btn-submit").addEventListener("click", submitRatings);
+});

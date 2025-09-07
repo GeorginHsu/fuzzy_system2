@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Fuzzy QA Platform</title>
   <link rel="stylesheet" href="styles.css" />
-  
+
+  <!-- 异步加载后端地址（保留你原逻辑） -->
   <script>
   (async () => {
     const r = await fetch('./config.json', { cache: 'no-store' });
@@ -16,13 +17,62 @@
 
   <script defer src="config.js"></script>
   <script defer src="app.js"></script>
+  <!-- 注意：下面这个脚本必须在 app.js 之后，覆盖其 authHeaders -->
+  <script defer>
+  (function () {
+    function setUser(u){
+      localStorage.setItem('username', u);
+      var el = document.getElementById('uname');
+      if (el) el.textContent = u || '（未设置）';
+      var btn1 = document.getElementById('btn-load');
+      var btn2 = document.getElementById('btn-submit');
+      if (btn1) btn1.disabled = !u;
+      if (btn2) btn2.disabled = !u;
+    }
+    function ask(){
+      var u = (prompt('请输入用户名：') || '').trim();
+      if (u) setUser(u);
+    }
+
+    // 初始化：若没有用户名则立刻弹窗；有的话直接显示
+    var saved = localStorage.getItem('username') || '';
+    if (!saved) { ask(); } else { setUser(saved); }
+
+    // 绑定“切换用户”按钮
+    document.addEventListener('DOMContentLoaded', function(){
+      var sw = document.getElementById('btn-switch-user');
+      if (sw) sw.addEventListener('click', function(){
+        localStorage.removeItem('username');
+        setUser('');
+        ask();
+      });
+    });
+
+    // 覆盖 app.js 里的 authHeaders，使其自动携带 X-Username
+    var orig = window.authHeaders;
+    window.authHeaders = function(){
+      var h = orig ? orig() : { "Content-Type": "application/json" };
+      var u = localStorage.getItem('username') || '';
+      if (u) h['X-Username'] = u;
+      return h;
+    };
+  })();
+  </script>
 </head>
 
 <body>
   <header>
     <h1>Fuzzy QA Platform</h1>
-    <button id="btn-load">随机抽图并生成问题</button>
+
+    <!-- 新增：用户栏（显示当前用户 & 切换） -->
+    <div id="userbar" class="card" style="display:flex;gap:8px;align-items:center;">
+      <span>当前用户：<b id="uname">（未设置）</b></span>
+      <button id="btn-switch-user" type="button">切换用户</button>
+    </div>
+
+    <button id="btn-load" disabled>随机抽图并生成问题</button>
   </header>
+
   <main>
     <section id="image-section" class="card hidden">
       <img id="img" alt="sample" />

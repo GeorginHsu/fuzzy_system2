@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Fuzzy QA Platform</title>
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- 异步加载后端地址（保留你原逻辑） -->
+  <!-- Async load backend base (keep your original logic) -->
   <script>
   (async () => {
     const r = await fetch('./config.json', { cache: 'no-store' });
@@ -17,28 +17,28 @@
 
   <script defer src="config.js"></script>
   <script defer src="app.js"></script>
-  <!-- 注意：下面这个脚本必须在 app.js 之后，覆盖其 authHeaders -->
+  <!-- Note: this script must run after app.js to override its authHeaders -->
   <script defer>
   (function () {
     function setUser(u){
       localStorage.setItem('username', u);
       var el = document.getElementById('uname');
-      if (el) el.textContent = u || '（未设置）';
+      if (el) el.textContent = u || '(Not set)';
       var btn1 = document.getElementById('btn-load');
       var btn2 = document.getElementById('btn-submit');
       if (btn1) btn1.disabled = !u;
       if (btn2) btn2.disabled = !u;
     }
     function ask(){
-      var u = (prompt('请输入用户名：') || '').trim();
+      var u = (prompt('Please enter your username:') || '').trim();
       if (u) setUser(u);
     }
 
-    // 初始化：若没有用户名则立刻弹窗；有的话直接显示
+    // Init: if no username, prompt immediately; otherwise display it
     var saved = localStorage.getItem('username') || '';
     if (!saved) { ask(); } else { setUser(saved); }
 
-    // 绑定“切换用户”按钮
+    // Bind "Switch User" button
     document.addEventListener('DOMContentLoaded', function(){
       var sw = document.getElementById('btn-switch-user');
       if (sw) sw.addEventListener('click', function(){
@@ -48,7 +48,7 @@
       });
     });
 
-    // 覆盖 app.js 里的 authHeaders，使其自动携带 X-Username
+    // Override app.js authHeaders to always include X-Username
     var orig = window.authHeaders;
     window.authHeaders = function(){
       var h = orig ? orig() : { "Content-Type": "application/json" };
@@ -64,13 +64,13 @@
   <header>
     <h1>Fuzzy QA Platform</h1>
 
-    <!-- 新增：用户栏（显示当前用户 & 切换） -->
+    <!-- User bar (show current user & switch) -->
     <div id="userbar" class="card" style="display:flex;gap:8px;align-items:center;">
-      <span>当前用户：<b id="uname">（未设置）</b></span>
-      <button id="btn-switch-user" type="button">切换用户</button>
+      <span>Current User: <b id="uname">(Not set)</b></span>
+      <button id="btn-switch-user" type="button">Switch User</button>
     </div>
 
-    <button id="btn-load" disabled>随机抽图并生成问题</button>
+    <button id="btn-load" disabled>Load Random Sample</button>
   </header>
 
   <main>
@@ -86,17 +86,17 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>维度</th>
-            <th>问题</th>
-            <th>Test 模型答案</th>
-            <th>评分 (-1/0/+1)</th>
-            <th>备注</th>
+            <th>Dimension</th>
+            <th>Question</th>
+            <th>Test Model Answer</th>
+            <th>Rating (-1/0/+1)</th>
+            <th>Comment</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
       <div class="actions">
-        <button id="btn-submit" disabled>提交评分</button>
+        <button id="btn-submit" disabled>Submit Ratings</button>
       </div>
       <div id="toast" class="toast hidden"></div>
     </section>

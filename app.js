@@ -6,7 +6,7 @@ let CURRENT = null;
 (function bootstrapUsername() {
   let u = localStorage.getItem("username") || "";
   if (!u) {
-    u = (prompt("请输入用户名：") || "").trim();
+    u = (prompt("Please enter your username:") || "").trim();
     if (u) localStorage.setItem("username", u);
   }
 })();
@@ -25,8 +25,8 @@ function toast(msg) {
 async function ensureUsername() {
   let u = localStorage.getItem("username") || "";
   if (u) return true;
-  u = (prompt("请输入用户名：") || "").trim();
-  if (!u) { toast("未设置用户名"); return false; }
+  u = (prompt("Please enter your username:") || "").trim();
+  if (!u) { toast("Username not set"); return false; }
   localStorage.setItem("username", u);
   return true;
 }
@@ -78,12 +78,12 @@ async function loadSample() {
         <td>
           <select class="score-select" data-qid="${qa.id}">
             <option value="">—</option>
-            <option value="1">+1 好</option>
-            <option value="0">0 一般</option>
-            <option value="-1">-1 坏</option>
+            <option value="1">+1 Good</option>
+            <option value="0">0 Neutral</option>
+            <option value="-1">-1 Bad</option>
           </select>
         </td>
-        <td><input type="text" placeholder="可选备注" data-cmt="${qa.id}" /></td>
+        <td><input type="text" placeholder="Optional comment" data-cmt="${qa.id}" /></td>
       `;
       tbody.appendChild(tr);
     });
@@ -91,7 +91,7 @@ async function loadSample() {
     $("#btn-submit").disabled = false;
   } catch (err) {
     console.error(err);
-    toast("加载失败");
+    toast("Failed to load");
   } finally {
     $("#btn-load").disabled = false;
   }
@@ -99,7 +99,7 @@ async function loadSample() {
 
 async function submitRatings() {
   if (!await ensureUsername()) return;
-  if (!CURRENT) return toast("请先加载一组样本");
+  if (!CURRENT) return toast("Please load a sample first");
   const ratings = [];
   tbody.querySelectorAll(".score-select").forEach(sel => {
     const val = sel.value;
@@ -108,7 +108,7 @@ async function submitRatings() {
     const cmt = tbody.querySelector(`input[data-cmt="${qid}"]`).value;
     ratings.push({ id: qid, score: Number(val), comment: cmt || undefined });
   });
-  if (!ratings.length) return toast("请至少为一个问题打分");
+  if (!ratings.length) return toast("Please rate at least one question");
   $("#btn-submit").disabled = true;
   try {
     await waitForBackendBase();
@@ -119,10 +119,10 @@ async function submitRatings() {
       body: JSON.stringify({ sample_id: CURRENT.sample_id, ratings }),
     });
     if (!res.ok) throw new Error(`rating failed: ${res.status}`);
-    toast("评分已提交，感谢！");
+    toast("Ratings submitted, thank you!");
   } catch (err) {
     console.error(err);
-    toast("提交失败");
+    toast("Submission failed");
   } finally {
     $("#btn-submit").disabled = false;
   }

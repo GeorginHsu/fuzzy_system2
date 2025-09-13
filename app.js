@@ -82,9 +82,9 @@ async function loadSample() {
         <td>
           <select class="score-select" data-qid="${qa.id}">
             <option value="">—</option>
-            <option value="1">+1 Good</option>
-            <option value="0">0 Neutral</option>
-            <option value="-1">-1 Bad</option>
+            <option value="1">+1 test model wrong</option>
+            <option value="0">0 test model correct</option>
+            <option value="-1">-1 unreasonable question (no definite answer / relies on non-visible info)</option>
           </select>
         </td>
         <td><input type="text" placeholder="Optional comment" data-cmt="${qa.id}" /></td>
